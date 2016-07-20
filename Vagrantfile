@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
 
 # shell script to run so we have installed all necessary packages
   config.vm.provision :shell, path: "pg_config.sh"
-# the distro we are running 
+# the distro we are running
   config.vm.box = "ubuntu/trusty32"
 # which port to forward to
   config.vm.network "forwarded_port", guest: 5000, host: 5000
