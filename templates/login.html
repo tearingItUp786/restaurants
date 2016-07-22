@@ -23,6 +23,7 @@
 
 
     <div id="signInButton">
+      <!-- All the data stuff here is required for the request to google -->
         <span class="g-signin"
           data-scope="openid email"
           data-clientid="186213781496-hchrhcjd2gf3f09em1orv8dsqd8ojm2i.apps.googleusercontent.com"
@@ -55,7 +56,7 @@
                         if (result) {
                             $('#result').html('Login Successful!</br>' + result + '</br>Redirecting...')
                             setTimeout(function() {
-                                window.location.href = "/restaurant";
+                                window.location.href = "/";
                             }, 4000);
 
                         } else if (authResult['error']) {

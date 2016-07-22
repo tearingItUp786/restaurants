@@ -1,5 +1,9 @@
-#client secret json
+# client secret json
 client_secret.json
+
+# respose from google
+response.json
+
 # Logs
 logs
 *.log
