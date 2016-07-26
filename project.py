@@ -155,42 +155,59 @@ def gdisconnect():
 @app.route("/")
 @app.route("/restaurant")
 def restaurants():
-    return "Main Page"
+    if 'username' not in login_session:
+        return "Public Main Page"
+    elif 'username' in login_session:
+        return "Private main page"
 
 
 @app.route("/new restaurant")
 def add_restaurant():
+    if "username" not in login_session:
+        return redirect("/login")
     return "Adding a new restaurant"
 
 
 @app.route("/edit/restaurant/<int:restaurant_id>")
 def edit_restaurant(restaurant_id):
+    if "username" not in login_session:
+        return redirect("/login")
     return "Editing %s" % (restaurant_id)
 
 
 @app.route("/delete/restaurant/<int:restaurant_id>")
 def delete_restaurant(restaurant_id):
     bro = "Taranveer Bains"
+    if "username" not in login_session:
+        return redirect("/login")
     return "Deleting %s %s" % (restaurant_id, bro)
 
 
 @app.route("/menu/<int:restaurant_id>")
 def menu(restaurant_id):
+    if "username" not in login_session:
+        return redirect("/login")
     return "Menu for %s" % restaurant_id
 
 
 @app.route("/menu/<int:restaurant_id>/add")
 def add_menu_item(restaurant_id):
+    if "username" not in login_session:
+        return redirect("/login")
     return "Adding item to %s" % restaurant_id
 
 
 @app.route("/menu/<int:restaurant_id>/edit/<int:menu_id>")
 def edit_menu_item(restaurant_id, menu_id):
+    if "username" not in login_session:
+        return redirect("/login")
     return "Editing %s" % menu_id
 
 
 @app.route("/menu/<int:restaurant_id>/<int:menu_id>/delete")
 def delete_menu_item(restaurant_id, menu_id):
+    if "username" not in login_session:
+        return redirect("/login")
     return "Deleting %s" % menu_id
 
 if __name__ == "__main__":

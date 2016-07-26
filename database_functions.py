@@ -8,13 +8,35 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-def add_restaurant_to_db(name, description, user_id):
+def createUser(login_session):
+    newUser = User(name=login_session['username'], email=login_session[
+                   'email'], image=login_session['image'])
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def getUserInfo(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+def getUserId(email):
+    try:
+        user = session.query(User).filter_by(email=email).one()
+        return user.id
+    except:
+        return None
+
+
+def addRestaurantToDb(name, description, user_id):
     aRestaurant = Restaurant(
         name=name, description=description, user_id=user_id)
     session.add(aRestaurant)
     session.commit()
 
 
-def search_for_a_restaurant(id):
+def searchForRestaurant(id):
     if session.query(Restaurant).filter_by(id=id).first():
         return session.query(Restaurant).filter_by(id=id).first()
