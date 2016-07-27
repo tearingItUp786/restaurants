@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import Flask, render_template, request, redirect, jsonify, url_for
 from flask import session as login_session
 import random
 import string
@@ -13,6 +13,7 @@ import json
 from flask import make_response
 # similar to urlib2 but with improvements
 import requests
+import database_functions as db
 
 app = Flask(__name__)
 
@@ -102,6 +103,12 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
+    user_id = db.getUserId(login_session['email'])
+    # if user does not exist, user_id will be None
+    if user_id is None:
+        user_id = db.createUser(login_session=login_session)
+    login_session['user_id'] = user_id
+
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -109,7 +116,7 @@ def gconnect():
     output += '<img src="'
     output += login_session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flash("you are now logged in as %s" % login_session['username'])
+    db.flash("You are now logged in as %s" % login_session['username'])
     print "done!"
     print credentials.to_json()
     return output
@@ -141,6 +148,7 @@ def gdisconnect():
         del login_session['username']
         del login_session['email']
         del login_session['picture']
+        del login_session['user_id']
         response = make_response(json.dumps('Successfully disconnected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -156,16 +164,26 @@ def gdisconnect():
 @app.route("/restaurant")
 def restaurants():
     if 'username' not in login_session:
-        return "Public Main Page"
+        restaurants = db.getAllRestaurants()
+        return render_template("public_restaurants.html", restaurants=restaurants)
     elif 'username' in login_session:
-        return "Private main page"
+        restaurants = db.getAllRestaurants()
+        return render_template("public_restaurants.html", restaurants=restaurants)
 
 
-@app.route("/new restaurant")
+@app.route("/new", methods=['GET', 'POST'])
 def add_restaurant():
     if "username" not in login_session:
         return redirect("/login")
-    return "Adding a new restaurant"
+    if request.method == 'POST':
+        addition = db.addRestaurantToDb(name=request.form['name'], description=request.form[
+            'description'], user_id=login_session['user_id'])
+        if addition is None:
+            return render_template("new_restaurant.html")
+        else:
+            return redirect(url_for('restaurants'))
+    else:
+        return render_template("new_restaurant.html")
 
 
 @app.route("/edit/restaurant/<int:restaurant_id>")
@@ -175,12 +193,20 @@ def edit_restaurant(restaurant_id):
     return "Editing %s" % (restaurant_id)
 
 
-@app.route("/delete/restaurant/<int:restaurant_id>")
+@app.route("/delete/restaurant/<int:restaurant_id>", methods=['GET', 'POST'])
 def delete_restaurant(restaurant_id):
-    bro = "Taranveer Bains"
     if "username" not in login_session:
         return redirect("/login")
-    return "Deleting %s %s" % (restaurant_id, bro)
+    if request.method == 'POST':
+        db.deleteRestaurantFromDb(restaurant_id, login_session['user_id'])
+        return redirect(url_for('restaurants'))
+    elif request.method == 'GET':
+        restaurant = db.searchForRestaurantById(restaurant_id)
+        if restaurant:
+            return render_template("delete_restaurant.html", restaurant=restaurant)
+        else:
+            db.flash("Restaurant with id of %s does not exist" % restaurant_id)
+            return redirect(url_for('restaurants'))
 
 
 @app.route("/menu/<int:restaurant_id>")

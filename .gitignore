@@ -4,6 +4,9 @@ client_secret.json
 # respose from google
 response.json
 
+# pyc files
+*.pyc
+
 # Logs
 logs
 *.log
