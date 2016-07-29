@@ -36,7 +36,7 @@ def getAllRestaurants():
     return session.query(Restaurant).all()
 
 
-def searchForRestaurantByName(name):
+def getRestaurantByName(name):
     restaurant = session.query(Restaurant).filter_by(name=name).first()
     if restaurant:
         return restaurant
@@ -44,7 +44,7 @@ def searchForRestaurantByName(name):
         return None
 
 
-def searchForRestaurantById(id):
+def getRestaurantById(id):
     restaurant = session.query(Restaurant).filter_by(id=id).first()
     if restaurant:
         return restaurant
@@ -53,7 +53,7 @@ def searchForRestaurantById(id):
 
 
 def addRestaurantToDb(name, description, user_id):
-    if searchForRestaurantByName(name=name) is None:
+    if getRestaurantByName(name=name) is None:
         aRestaurant = Restaurant(
             name=name, description=description, user_id=user_id)
         session.add(aRestaurant)
@@ -66,16 +66,27 @@ def addRestaurantToDb(name, description, user_id):
 
 
 def deleteRestaurantFromDb(restaurant_id, user_id):
-    restaurant = searchForRestaurantById(restaurant_id)
+    restaurant = getRestaurantById(restaurant_id)
     if user_id == restaurant.user_id:
         session.delete(restaurant)
         flash("%s successfully deleted" % restaurant.name)
         session.commit()
-        return True
     else:
         user = getUserInfo(user_id)
         flash("%s is not the owner of this restaurant" % user.name)
-        return None
+
+
+def editRestaurantFromDb(restaurant_id, user_id, name, description):
+    editedRestaurant = getRestaurantById(restaurant_id)
+    old_restaurant_name = editedRestaurant.name
+    if user_id == editedRestaurant.user_id:
+        if name:
+            editedRestaurant.name = name
+        if description:
+            editedRestaurant.description = description
+        flash("%s succesfully edited and is now %s" % (old_restaurant_name, editedRestaurant.name))
+        session.add(editedRestaurant)
+        session.commit()
 
 
 def addMenuItem(name, description, price, course, restaurant_id, user_id):

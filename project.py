@@ -14,6 +14,7 @@ from flask import make_response
 # similar to urlib2 but with improvements
 import requests
 import database_functions as db
+import os
 
 app = Flask(__name__)
 
@@ -89,7 +90,8 @@ def gconnect():
         return response
 
     # Store the access token in the session for later use.
-    login_session['access_token'] = credentials.access_token
+    # login_session['access_token'] = credentials.access_token
+    login_session['credentials'] = credentials
     login_session['gplus_id'] = gplus_id
 
     # Get user info
@@ -126,29 +128,30 @@ def gconnect():
 
 @app.route('/gdisconnect')
 def gdisconnect():
-    access_token = login_session['access_token']
-    print 'In gdisconnect access token is %s', access_token
+    credentials = login_session.get('credentials')
+    print 'In gdisconnect access token is %s' % credentials.access_token
     print 'User name is: '
     print login_session['username']
-    if access_token is None:
+    if credentials is None:
         print 'Access Token is None'
         response = make_response(json.dumps(
             'Current user not connected.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session[
-        'access_token']
+    access_token = credentials.access_token
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
+    print url
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
     print result
     if result['status'] == '200':
-        del login_session['access_token']
-        del login_session['gplus_id']
-        del login_session['username']
-        del login_session['email']
-        del login_session['picture']
-        del login_session['user_id']
+        # del login_session['access_token']
+        login_session.pop('gplus_id', None)
+        login_session.pop('username', None)
+        login_session.pop('email', None)
+        login_session.pop('picture', None)
+        login_session.pop('user_id', None)
         response = make_response(json.dumps('Successfully disconnected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -181,16 +184,28 @@ def add_restaurant():
         if addition is None:
             return render_template("new_restaurant.html")
         else:
-            return redirect(url_for('restaurants'))
+            return redirect('/')
     else:
         return render_template("new_restaurant.html")
 
 
-@app.route("/edit/restaurant/<int:restaurant_id>")
+@app.route("/edit/restaurant/<int:restaurant_id>", methods=['GET', 'POST'])
 def edit_restaurant(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
-    return "Editing %s" % (restaurant_id)
+
+    if request.method == 'POST':
+        db.editRestaurantFromDb(restaurant_id=restaurant_id, user_id=login_session[
+                                'user_id'], name=request.form['name'], description=request.form['description'])
+        return redirect('/')
+
+    elif request.method == 'GET':
+        restaurant = db.getRestaurantById(restaurant_id)
+        if restaurant:
+            return render_template('edit_restaurant.html', restaurant=restaurant)
+        else:
+            db.flash("Restaurant with id of %s does not exist" % restaurant_id)
+            return redirect('/')
 
 
 @app.route("/delete/restaurant/<int:restaurant_id>", methods=['GET', 'POST'])
@@ -199,14 +214,14 @@ def delete_restaurant(restaurant_id):
         return redirect("/login")
     if request.method == 'POST':
         db.deleteRestaurantFromDb(restaurant_id, login_session['user_id'])
-        return redirect(url_for('restaurants'))
+        return redirect('/')
     elif request.method == 'GET':
-        restaurant = db.searchForRestaurantById(restaurant_id)
+        restaurant = db.getRestaurantById(restaurant_id)
         if restaurant:
             return render_template("delete_restaurant.html", restaurant=restaurant)
         else:
             db.flash("Restaurant with id of %s does not exist" % restaurant_id)
-            return redirect(url_for('restaurants'))
+            return redirect('/')
 
 
 @app.route("/menu/<int:restaurant_id>")
@@ -238,8 +253,7 @@ def delete_menu_item(restaurant_id, menu_id):
 
 if __name__ == "__main__":
     # need a secret key to access login_session
-    app.secret_key = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                             for x in range(32))
+    app.secret_key = os.urandom(24)
     # this will make it reload upon saved changes
     app.debug = True
     # forward to the port

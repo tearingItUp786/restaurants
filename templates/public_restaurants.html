@@ -12,11 +12,17 @@
 {% endwith %}
 
   <h1>Restaurants</h1>
-  <ul>
-      {% for restaurant in restaurants %}
-        <li>
-          <a>{{restaurant.name}}</a>
-        </li>
-      {% endfor %}
-  </ul>
+  {% if  restaurants|length > 0 %}
+      <ul>
+          {% for restaurant in restaurants %}
+            <li>
+              <a href="{{url_for('menu', restaurant_id=restaurant.id)}}">{{restaurant.name}}</a><br/>
+              description: {{restaurant.description}}
+            </br/>
+            </li>
+          {% endfor %}
+      </ul>
+    {% else %}
+      <h1>There are no restaurants right now!</h1>
+  {% endif %}
 {% endblock %}
