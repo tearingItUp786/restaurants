@@ -1,11 +1,10 @@
 {% extends "main.html" %}
 {% block content %}
+{% from "_formhelpers.html" import render_field %}
 <form action="" method = "post">
-      <label for="name">Name:</label>
-      <input type ="text" maxlength="100" name="name" placeholder="{{restaurant.name}}">
-      <label for="description">Description</label>
-      <input type="text" name="description" maxlength="200" placeholder="{{restaurant.description}}">
-      <input type="submit" id="submit" type="submit" value="Submit">
-    </form>
-
+  <dl>
+      {{ render_field(form.name) }}
+      {{ render_field(form.description) }}
+    <p><input type="submit" value="Save">
+</form>
 {% endblock %}

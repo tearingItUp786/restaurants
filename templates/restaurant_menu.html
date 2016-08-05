@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+{% block content %}
+<h1>{{restaurant.name}}</h1>
+{% if  menu_items|length > 0 %}
+    <ul>
+        {% for item in menu_items %}
+          <li>
+            {{item.course}}
+            {{item.name}}
+            {{item.description}}
+            {{item.price}}
+          </li>
+        {% endfor %}
+    </ul>
+  {% else %}
+    <h1>There are no menu items right now!</h1>
+{% endif %}
+{% endblock %}

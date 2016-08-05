@@ -1,10 +1,12 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Enum, DECIMAL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 import datetime
 
 Base = declarative_base()
+
+course_enums = ('Appetizer', 'Entree', 'Dessert', 'Beverage')
 
 
 class User(Base):
@@ -14,6 +16,7 @@ class User(Base):
     name = Column(String(250), nullable=False)
     email = Column(String(250), nullable=False)
     picture = Column(String(250))
+    restaurants = relationship("Restaurant", cascade="all")
 
 
 class Restaurant(Base):
@@ -24,7 +27,8 @@ class Restaurant(Base):
     description = Column(String(250), nullable=False)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
+    user = relationship("User", cascade="all")
+    items = relationship("MenuItem", cascade="all")
 
     @property
     def serialize(self):
@@ -42,11 +46,11 @@ class MenuItem(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(80), nullable=False)
     description = Column(String(250))
-    price = Column(String(8))
-    course = Column(String(250))
-    restaurant = relationship(Restaurant)
+    price = Column(DECIMAL(5, 2))
+    course = Column(Enum(*course_enums))
+    restaurant = relationship("Restaurant")
     restaurant_id = Column(Integer, ForeignKey('restaurant.id'))
-    user = relationship(User)
+    user = relationship("User")
     user_id = Column(Integer, ForeignKey('user.id'))
 
     @property

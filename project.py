@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for
+from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
 from flask import session as login_session
+import view_forms as vf
 import random
 import string
 # creates flow object from client secret json file
@@ -118,7 +119,7 @@ def gconnect():
     output += '<img src="'
     output += login_session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    db.flash("You are now logged in as %s" % login_session['username'])
+    flash("You are now logged in as %s" % login_session['username'])
     print "done!"
     print credentials.to_json()
     return output
@@ -164,12 +165,11 @@ def gdisconnect():
 
 
 @app.route("/")
-@app.route("/restaurant")
 def restaurants():
     if 'username' not in login_session:
         restaurants = db.getAllRestaurants()
         return render_template("public_restaurants.html", restaurants=restaurants)
-    elif 'username' in login_session:
+    if 'username' in login_session:
         restaurants = db.getAllRestaurants()
         return render_template("public_restaurants.html", restaurants=restaurants)
 
@@ -178,15 +178,18 @@ def restaurants():
 def add_restaurant():
     if "username" not in login_session:
         return redirect("/login")
-    if request.method == 'POST':
-        addition = db.addRestaurantToDb(name=request.form['name'], description=request.form[
-            'description'], user_id=login_session['user_id'])
+
+    form = vf.NewRestaurantForm(request.form)
+    if request.method == 'POST' and form.validate():
+        addition = db.addRestaurantToDb(
+            name=form.name.data, description=form.description.data, user_id=login_session['user_id'])
         if addition is None:
-            return render_template("new_restaurant.html")
+            flash("Restaurant with name %s already exists" % form.name.data)
         else:
-            return redirect('/')
-    else:
-        return render_template("new_restaurant.html")
+            flash('Succesfully added %s' % form.name.data)
+            return redirect(url_for('restaurants'))
+
+    return render_template('new_restaurant.html', form=form)
 
 
 @app.route("/edit/restaurant/<int:restaurant_id>", methods=['GET', 'POST'])
@@ -194,62 +197,101 @@ def edit_restaurant(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
 
-    if request.method == 'POST':
-        db.editRestaurantFromDb(restaurant_id=restaurant_id, user_id=login_session[
-                                'user_id'], name=request.form['name'], description=request.form['description'])
-        return redirect('/')
+    form = vf.NewRestaurantForm(request.form)
+    restaurant = db.getRestaurantById(restaurant_id)
+
+    if request.method == 'POST' and form.validate():
+        old_name = restaurant.name
+        if db.editRestaurantFromDb(restaurant_id=restaurant_id, user_id=login_session['user_id'], name=form.name.data, description=form.description.data):
+            if old_name == restaurant.name:
+                flash("Succesfully edited %s" % old_name)
+            else:
+                flash("Succesfully edited %s to %s" %
+                      (old_name, form.name.data))
+            return redirect(url_for('restaurants'))
 
     elif request.method == 'GET':
-        restaurant = db.getRestaurantById(restaurant_id)
         if restaurant:
-            return render_template('edit_restaurant.html', restaurant=restaurant)
+            form.name.data = restaurant.name
+            form.description.data = restaurant.description
         else:
-            db.flash("Restaurant with id of %s does not exist" % restaurant_id)
-            return redirect('/')
+            return redirect(url_for('restaurants'))
+
+    return render_template('edit_restaurant.html', restaurant=restaurant, form=form)
 
 
 @app.route("/delete/restaurant/<int:restaurant_id>", methods=['GET', 'POST'])
 def delete_restaurant(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
+
     if request.method == 'POST':
-        db.deleteRestaurantFromDb(restaurant_id, login_session['user_id'])
-        return redirect('/')
-    elif request.method == 'GET':
+        restaurant = db.getRestaurantById(restaurant_id)
+        if db.deleteRestaurantFromDb(restaurant_id, login_session['user_id']):
+            flash('Successfuly deleted %s' % restaurant.name)
+            return redirect(url_for('restaurants'))
+
+    if request.method == 'GET':
         restaurant = db.getRestaurantById(restaurant_id)
         if restaurant:
             return render_template("delete_restaurant.html", restaurant=restaurant)
         else:
-            db.flash("Restaurant with id of %s does not exist" % restaurant_id)
-            return redirect('/')
+            return redirect(url_for('restaurants'))
 
 
 @app.route("/menu/<int:restaurant_id>")
 def menu(restaurant_id):
+    error = None
     if "username" not in login_session:
         return redirect("/login")
-    return "Menu for %s" % restaurant_id
+
+    menu_items = db.getAllMenuItems(restaurant_id)
+    restaurant = db.getRestaurantById(restaurant_id)
+    if restaurant:
+        return render_template("restaurant_menu.html", restaurant=restaurant, menu_items=menu_items, error=error)
+    else:
+        return redirect(url_for('restaurants'))
 
 
-@app.route("/menu/<int:restaurant_id>/add")
+@app.route("/menu/<int:restaurant_id>/new", methods=['GET', 'POST'])
 def add_menu_item(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
-    return "Adding item to %s" % restaurant_id
+    form = vf.MenuItemForm(request.form)
+    courses = db.getCourseEnumList()
+    choiceList = [(c, c) for c in courses]
+    form.courses.choices = choiceList
+
+    if request.method == 'POST' and form.validate():
+        if db.addMenuItem(name=form.name.data, description=form.description.data, price=form.price.data, course=form.courses.data, restaurant_id=restaurant_id, user_id=login_session['user_id']):
+            flash('Successfully added menu item %s' % form.name.data)
+            return redirect(url_for('menu', restaurant_id=restaurant_id))
+        else:
+            return render_template("new_menu_item.html", form=form)
+
+    return render_template("new_menu_item.html", form=form)
 
 
-@app.route("/menu/<int:restaurant_id>/edit/<int:menu_id>")
-def edit_menu_item(restaurant_id, menu_id):
+@app.route("/menu/<int:restaurant_id>/edit", methods=['GET', 'POST'])
+def edit_menu_item(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
-    return "Editing %s" % menu_id
+    if request.method == 'POST':
+        pass
+    elif request.method == 'GET':
+        menu_items = db.getAllMenuItems(restaurant_id)
+        courses = db.getCourseEnumList()
+        if menu_items:
+            return render_template("edit_menu_items.html", menu_items=menu_items, courses=courses)
+        else:
+            return redirect(url_for('menu', restaurant_id=restaurant_id))
 
 
-@app.route("/menu/<int:restaurant_id>/<int:menu_id>/delete")
-def delete_menu_item(restaurant_id, menu_id):
+@app.route("/menu/<int:restaurant_id>/delete")
+def delete_menu_item(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
-    return "Deleting %s" % menu_id
+    return "Deleting"
 
 if __name__ == "__main__":
     # need a secret key to access login_session

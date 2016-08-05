@@ -1,16 +1,6 @@
 {% extends "main.html" %}
 {% block content %}
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <h1>
-    {% for message in messages %}
-      {{message}}
-    {% endfor %}
-    </h1>
-  {% endif %}
-{% endwith %}
-
   <h1>Restaurants</h1>
   {% if  restaurants|length > 0 %}
       <ul>
