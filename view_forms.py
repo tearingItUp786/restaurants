@@ -1,4 +1,4 @@
-from wtforms import Form, TextAreaField, StringField, DecimalField, SelectField, validators
+from wtforms import Form, TextAreaField, StringField, DecimalField, SelectField, validators, FieldList, FormField
 
 
 class NewRestaurantForm(Form):
@@ -10,4 +10,9 @@ class NewRestaurantForm(Form):
 
 class MenuItemForm(NewRestaurantForm):
     price = DecimalField('Price', [validators.required()])
-    courses = SelectField('Course')
+    courses = SelectField('Course', [validators.required()], choices=[('Appetizer', 'Appetizer'), (
+        'Entree', 'Entree'), ('Dessert', 'Dessert'), ('Beverage', 'Beverage')])
+
+
+class UpdateMenuItemsForm(Form):
+    items = FieldList(FormField(MenuItemForm))
