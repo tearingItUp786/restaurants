@@ -258,6 +258,8 @@ def add_menu_item(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
     form = vf.MenuItemForm(request.form)
+    print form.courses
+    print form.name
     if request.method == 'POST' and form.validate():
         if db.addMenuItem(name=form.name.data, description=form.description.data, price=form.price.data, course=form.courses.data, restaurant_id=restaurant_id, user_id=login_session['user_id']):
             flash('Successfully added menu item %s' % form.name.data)
@@ -271,36 +273,43 @@ def add_menu_item(restaurant_id):
 
 @app.route("/menu/<int:restaurant_id>/edit", methods=['GET', 'POST'])
 def edit_menu_items(restaurant_id):
-    # if "username" not in login_session:
-        # return redirect("/login")
+    if "username" not in login_session:
+        return redirect("/login")
 
     menu_items = db.getAllMenuItems(restaurant_id)
     if not menu_items:
         return redirect(url_for('menu', restaurant_id=restaurant_id))
 
     form = vf.UpdateMenuItemsForm(request.form)
-    for item in menu_items:
-        form_item = vf.MenuItemForm(obj=item)
-        form_item.courses.data = item.course
-        form.items.append_entry(form_item)
-
-    print form.items.data[0]
-    if request.method == 'POST':
-        pass
-
-        return redirect(url_for('edit_menu_items', restaurant_id=restaurant_id))
 
     if request.method == 'GET':
+        for item in menu_items:
+            form_item = vf.MenuItemForm()
+            form_item.name = item.name
+            form_item.description = item.description
+            form_item.price = item.price
+            form_item.courses = item.course
+            form_item.entry_id = item.id
+            form.items.append_entry(form_item)
         return render_template('edit_menu_items.html', form=form)
-    # if request.method == 'POST':
-    #     pass
-    # elif request.method == 'GET':
-    #     menu_items = db.getAllMenuItems(restaurant_id)
-    #     courses = db.getCourseEnumList()
-    #     if menu_items:
-    #         return render_template("edit_menu_items.html", menu_items=menu_items, courses=courses)
-    #     else:
-    #         return redirect(url_for('menu', restaurant_id=restaurant_id))
+
+    if request.method == 'POST':
+        if form.validate():
+            for item in form.items.data:
+                if db.editMenuItem(item_id=item.get('entry_id'),
+                                   user_id=login_session['user_id'],
+                                   name=item.get('name'),
+                                   description=item.get('description'),
+                                   price=item.get('price'),
+                                   course=item.get('courses'),
+                                   restaurant_id=restaurant_id):
+                    flash("Successfully updated menu item: %s" %
+                          item.get('name'))
+                else:
+                    flash("Don't try and pull a fast one on me bruh")
+                    return redirect(url_for('edit_menu_items', restaurant_id=restaurant_id))
+            return redirect(url_for('menu', restaurant_id=restaurant_id))
+        return render_template('edit_menu_items.html', form=form)
 
 
 @app.route("/menu/<int:restaurant_id>/delete")

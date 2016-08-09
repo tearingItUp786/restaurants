@@ -88,10 +88,13 @@ def getMenuItemById(id):
         return menuItem
 
 
-def getMenuItemByName(name):
+def getMenuItemByName(name, restaurant_id):
     menuItem = session.query(MenuItem).filter_by(name=name).first()
-    if menuItem:
-        return menuItem
+    if menuItem is not None:
+        if menuItem.restaurant_id == restaurant_id:
+            return menuItem
+        else:
+            return None
     else:
         return None
 
@@ -101,7 +104,8 @@ def getCourseEnumList():
 
 
 def addMenuItem(name, description, price, course, restaurant_id, user_id):
-    if getMenuItemByName(name=name) is None:
+    menuItem = getMenuItemByName(name=name, restaurant_id=restaurant_id)
+    if menuItem is None:
         menuItem = MenuItem(name=name, description=description, price=price,
                             course=course, restaurant_id=restaurant_id, user_id=user_id)
         session.add(menuItem)
@@ -109,8 +113,12 @@ def addMenuItem(name, description, price, course, restaurant_id, user_id):
         return True
 
 
-def editMenuItem(item_id, user_id, name, description, price, course):
+def editMenuItem(item_id, user_id, name, description, price, course, restaurant_id):
     editedMenuItem = getMenuItemById(item_id)
+    duplicate = getMenuItemByName(name=name, restaurant_id=restaurant_id)
+    if duplicate is not None:
+        if editedMenuItem.name != duplicate.name:
+            return False
     if editedMenuItem.user_id == user_id:
         if name:
             editedMenuItem.name = name

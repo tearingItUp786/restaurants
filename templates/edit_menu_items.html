@@ -4,17 +4,15 @@
 {% from "_formhelpers.html" import render_field %}
 <form action="" method = "post">
   <dl>
-    {% for child in form.items.data %}
-      {{ render_field(child.name) }}
-      {{ render_field(child.description) }}
-      {{ render_field(child.price) }}
-      {{ child.courses | safe}}
+    {% for child in form.items %}
+      {% for sub in child %}
+          {{render_field(sub)}}
+      {% endfor %}
       <br />
       <br/>
 
     </br/>
     {% endfor %}
-    <h1>Hello</h1>
     <p><input type="submit" value="Save">
 </form>
 {% endblock %}
