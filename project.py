@@ -209,6 +209,9 @@ def edit_restaurant(restaurant_id):
                 flash("Succesfully edited %s to %s" %
                       (old_name, form.name.data))
             return redirect(url_for('restaurants'))
+        else:
+            flash("Don't try and pull a fast one buddy")
+            return redirect(url_for('edit_restaurant', restaurant_id=restaurant_id))
 
     elif request.method == 'GET':
         if restaurant:
@@ -316,7 +319,21 @@ def edit_menu_items(restaurant_id):
 def delete_menu_item(restaurant_id):
     if "username" not in login_session:
         return redirect("/login")
-    return "Deleting"
+    menu_items = db.getAllMenuItems(restaurant_id)
+    if not menu_items:
+        return redirect(url_for('menu', restaurant_id=restaurant_id))
+    form = vf.DeleteMenuItemsForm(request.form)
+    if request.method == 'GET':
+        for item in menu_items:
+            form_item = vf.MenuItemForm()
+            form_item.name = item.name
+            form_item.description = item.description
+            form_item.price = item.price
+            form_item.courses = item.course
+            form_item.entry_id = item.id
+            form.items.append_entry(form_item)
+        return render_template('delete_menu_items.html', form=form)
+    pass
 
 if __name__ == "__main__":
     # need a secret key to access login_session

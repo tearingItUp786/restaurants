@@ -1,21 +1,19 @@
 {% extends "main.html" %}
 {% block content %}
-<h1>Edit</h1>
+<h1>Delete</h1>
 {% from "_formhelpers.html" import render_field %}
 <form action="" method = "post">
   <dl>
     {% for child in form.items %}
       {% for sub in child %}
-        {% if sub.label.text == "Entry Id" %}
-          {{sub}}
-        {% else %}
+        {% if sub.label.text == "Delete" %}
           {{render_field(sub)}}
+        {% elif sub.label.text != "Entry Id"%}
+          {{sub.label}}<br/>
+          {{sub.data}}<br/><br/>
         {% endif %}
       {% endfor %}
-      <br />
       <br/>
-
-    </br/>
     {% endfor %}
     <p><input type="submit" value="Save">
 </form>

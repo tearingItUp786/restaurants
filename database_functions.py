@@ -68,14 +68,18 @@ def deleteRestaurantFromDb(restaurant_id, user_id):
 
 def editRestaurantFromDb(restaurant_id, user_id, name, description):
     editedRestaurant = getRestaurantById(restaurant_id)
-    if user_id == editedRestaurant.user_id:
-        if name:
-            editedRestaurant.name = name
-        if description:
-            editedRestaurant.description = description
-        session.add(editedRestaurant)
-        session.commit()
-        return True
+    duplicate = getRestaurantByName(name=name)
+    if duplicate is not None and duplicate.id != editedRestaurant.id:
+        return False
+    if editedRestaurant is not None:
+        if user_id == editedRestaurant.user_id:
+            if name:
+                editedRestaurant.name = name
+            if description:
+                editedRestaurant.description = description
+            session.add(editedRestaurant)
+            session.commit()
+            return True
 
 
 def getAllMenuItems(restaurant_id):
@@ -116,18 +120,19 @@ def addMenuItem(name, description, price, course, restaurant_id, user_id):
 def editMenuItem(item_id, user_id, name, description, price, course, restaurant_id):
     editedMenuItem = getMenuItemById(item_id)
     duplicate = getMenuItemByName(name=name, restaurant_id=restaurant_id)
-    if duplicate is not None:
-        if editedMenuItem.name != duplicate.name:
-            return False
-    if editedMenuItem.user_id == user_id:
-        if name:
-            editedMenuItem.name = name
-        if description:
-            editedMenuItem.description = description
-        if price:
-            editedMenuItem.price = price
-        if course:
-            editMenuItem.course = course
-        session.add(editedMenuItem)
-        session.commit()
-        return True
+    if editedMenuItem is not None:
+        if duplicate is not None:
+            if editedMenuItem.name != duplicate.name:
+                return False
+        if editedMenuItem.user_id == user_id:
+            if name:
+                editedMenuItem.name = name
+            if description:
+                editedMenuItem.description = description
+            if price:
+                editedMenuItem.price = price
+            if course:
+                editMenuItem.course = course
+            session.add(editedMenuItem)
+            session.commit()
+            return True

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Enum, Float
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Enum, DECIMAL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -46,7 +46,7 @@ class MenuItem(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(80), nullable=False)
     description = Column(String(250))
-    price = Column(Float(5, 2))
+    price = Column(DECIMAL(5, 2))
     course = Column(Enum(*course_enums))
     restaurant = relationship("Restaurant")
     restaurant_id = Column(Integer, ForeignKey('restaurant.id'))
